@@ -11,37 +11,32 @@ contract Splitter {
     // 5)  Alice can use the Web page to split her ether.
     
     //Owner represents the original deployer of the contract
-    address owner;
-    address public AliceAddress;
-    address payable public BobAddress;
-    address payable public CarolAddress;
+    address payable owner;
+    address public aliceAddress;
+    address payable public bobAddress;
+    address payable public carolAddress;
     bool reEntrancyMutex = false;
+    uint amountSent;
+
+    //mapping declaration
+    mapping (address => uint) public balances;
     
     
     //event declarations
     event ContractDeployed(address _splitterAddress);
     event FundsSplit(uint _totalSent, uint _splitAmount);
+    event FundsWithdrawn(uint _totalSent, address _address);
     
     //This constructor will set their addresses upon contract creation only
     constructor(address payable _aliceAddress, address payable _bobAddress, address payable _carolAddress) public{
         owner = msg.sender;
-        AliceAddress = _aliceAddress;
-        BobAddress = _bobAddress;
-        CarolAddress = _carolAddress;
+        aliceAddress = _aliceAddress;
+        bobAddress = _bobAddress;
+        carolAddress = _carolAddress;
         emit ContractDeployed(address(this));
     }
     
     
-    //Function to return the balance of the splitter contract
-    function getSplitterBalance() public view returns(uint) {
-        return address(this).balance;
-    }
-    
-    //Function to return balance of Alice, Bob, and Carol on the Web page
-    //This assumes the middleware would know the order of the uints returned here [Alice, Bob, Carol]
-    function getParticipantBalance() public view returns(uint, uint, uint) {
-        return ( address(AliceAddress).balance, address(BobAddress).balance, address(CarolAddress).balance);
-    }
 
     function getIndividalBalance(address _user) public view returns(uint) {
         return address(_user).balance;
@@ -50,18 +45,32 @@ contract Splitter {
     //Only Alice is allowed to split her ether
     //Below is the function to split ether from alice to carol and bob
     function splitEther() public payable {
-        require(!reEntrancyMutex);
-        require(msg.sender == AliceAddress, "You are not Alice!");
-        require(msg.value % 2 == 0, "This contract requires even amounts of ether");
-        //The reEntrancyMutex is probably overkill since using .transfer() sends limited gas, but i included just to be safe
-        reEntrancyMutex = true;
-        BobAddress.transfer(msg.value / 2);
-        CarolAddress.transfer(msg.value / 2);
-        reEntrancyMutex = false;
+
+        require(msg.sender == aliceAddress, "You are not Alice!");
+        require(msg.value % 2 == 0, "This contract requires even amounts of ether to be split");
+
+        balances[bobAddress] = (msg.value / 2);
+        balances[carolAddress] = (msg.value / 2);
+
         emit FundsSplit(msg.value, msg.value/2);
     }
     
-    function recieveFunds() public payable {}
+    function withdrawEther(uint amount) public {
+        
+        require(!reEntrancyMutex);
+        reEntrancyMutex = true;
+        require(amount <= balances[msg.sender]);
+        balances[msg.sender] -= amount;
+        msg.sender.transfer(amount);
+        reEntrancyMutex = false;
+        emit FundsWithdrawn(amount, msg.sender);
+        
+        
+    }
     
-    function () external payable {}
+    //The owner (original deployer) is entitled to any extra funds recieved by the callback
+    
+    function () external payable {
+        balances[owner] = msg.value;
+    }
 }
