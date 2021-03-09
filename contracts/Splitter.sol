@@ -2,8 +2,6 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract Splitter {
     
-    
-    
     // 1)  there are 3 people: Alice, Bob and Carol.
     // 2)  we can see the balance of the Splitter contract on the Web page.
     // 3)  whenever Alice sends ether to the contract for it to be split, half of it goes to Bob and the other half to Carol.
@@ -15,8 +13,6 @@ contract Splitter {
     address public aliceAddress;
     address payable public bobAddress;
     address payable public carolAddress;
-    bool reEntrancyMutex = false;
-    uint amountSent;
 
     //mapping declaration
     mapping (address => uint) public balances;
@@ -49,20 +45,17 @@ contract Splitter {
         require(msg.sender == aliceAddress, "You are not Alice!");
         require(msg.value % 2 == 0, "This contract requires even amounts of ether to be split");
 
-        balances[bobAddress] = (msg.value / 2);
-        balances[carolAddress] = (msg.value / 2);
+        balances[bobAddress] += (msg.value / 2);
+        balances[carolAddress] += (msg.value / 2);
 
         emit FundsSplit(msg.value, msg.value/2);
     }
     
     function withdrawEther(uint amount) public {
         
-        require(!reEntrancyMutex);
-        reEntrancyMutex = true;
         require(amount <= balances[msg.sender]);
         balances[msg.sender] -= amount;
         msg.sender.transfer(amount);
-        reEntrancyMutex = false;
         emit FundsWithdrawn(amount, msg.sender);
         
         
@@ -71,6 +64,6 @@ contract Splitter {
     //The owner (original deployer) is entitled to any extra funds recieved by the callback
     
     function () external payable {
-        balances[owner] = msg.value;
+        balances[owner] += msg.value;
     }
 }
