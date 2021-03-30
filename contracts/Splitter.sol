@@ -1,5 +1,7 @@
 pragma solidity >=0.4.22 <0.9.0;
 
+import './SafeMath.sol';
+
 contract Splitter {
     
     // 1)  there are 3 people: Alice, Bob and Carol.
@@ -9,10 +11,7 @@ contract Splitter {
     // 5)  Alice can use the Web page to split her ether.
     
     //Owner represents the original deployer of the contract
-    address payable owner;
-    address public aliceAddress;
-    address payable public bobAddress;
-    address payable public carolAddress;
+    address owner;
 
     //mapping declaration
     mapping (address => uint) public balances;
@@ -24,29 +23,20 @@ contract Splitter {
     event FundsWithdrawn(uint _totalSent, address _address);
     
     //This constructor will set their addresses upon contract creation only
-    constructor(address payable _aliceAddress, address payable _bobAddress, address payable _carolAddress) public{
+    constructor() public {
         owner = msg.sender;
-        aliceAddress = _aliceAddress;
-        bobAddress = _bobAddress;
-        carolAddress = _carolAddress;
         emit ContractDeployed(address(this));
-    }
-    
-    
-
-    function getIndividalBalance(address _user) public view returns(uint) {
-        return address(_user).balance;
     }
     
     //Only Alice is allowed to split her ether
     //Below is the function to split ether from alice to carol and bob
-    function splitEther() public payable {
+    function splitEther(address _bobAddress, address _carolAddress) public payable {
 
-        require(msg.sender == aliceAddress, "You are not Alice!");
+        //Removed requirement for only alice to send, now anyone can submit to have ether split
         require(msg.value % 2 == 0, "This contract requires even amounts of ether to be split");
-
-        balances[bobAddress] += (msg.value / 2);
-        balances[carolAddress] += (msg.value / 2);
+        
+        balances[_bobAddress] = SafeMath.add(balances[_bobAddress], msg.value/2);
+        balances[_carolAddress] = SafeMath.add(balances[_carolAddress], msg.value/2);
 
         emit FundsSplit(msg.value, msg.value/2);
     }
@@ -54,7 +44,7 @@ contract Splitter {
     function withdrawEther(uint amount) public {
         
         require(amount <= balances[msg.sender]);
-        balances[msg.sender] -= amount;
+        balances[msg.sender] = SafeMath.sub(balances[msg.sender], amount);
         msg.sender.transfer(amount);
         emit FundsWithdrawn(amount, msg.sender);
         
@@ -64,6 +54,6 @@ contract Splitter {
     //The owner (original deployer) is entitled to any extra funds recieved by the callback
     
     function () external payable {
-        balances[owner] += msg.value;
+        balances[owner] = SafeMath.add(balances[owner], msg.value);
     }
 }
