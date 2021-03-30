@@ -11,18 +11,15 @@ contract('Splitter', (accounts) => {
 
       let splitterInstance;
 
-      beforeEach(() => {
-        return Splitter.new(aliceAddress,bobAddress,carolAddress,{from: aliceAddress})
-        .then((instance) => {
-          splitterInstance=instance;
-        });
+      beforeEach("should create a new instance", async () => {
+        return splitterInstance = await Splitter.new({from: aliceAddress})
       });
 
       it('should have a balance of 50 for bob', async () => {
        
         const valueSent = 100;
 
-        await splitterInstance.splitEther({ value: valueSent, from: accounts[0] });
+        await splitterInstance.splitEther(bobAddress, carolAddress, { value: valueSent, from: aliceAddress });
 
         const finalBobBalance = await splitterInstance.balances.call(accounts[1]);
         assert.strictEqual(finalBobBalance.toString(10), "50", "Funds did not transfer correctly");
@@ -32,7 +29,7 @@ contract('Splitter', (accounts) => {
       
        const valueSent = 100;
 
-       await splitterInstance.splitEther({ value: valueSent, from: accounts[0] });
+       await splitterInstance.splitEther(bobAddress, carolAddress, { value: valueSent, from: aliceAddress });
 
         const finalCarolBalance = await splitterInstance.balances.call(accounts[2]);
         assert.strictEqual(finalCarolBalance.toString(10), "50", "Funds did not transfer correctly");
