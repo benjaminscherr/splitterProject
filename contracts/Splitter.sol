@@ -2,6 +2,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 import './SafeMath.sol';
 
+//Updated
 contract Splitter {
     
     // 1)  there are 3 people: Alice, Bob and Carol.
@@ -11,16 +12,19 @@ contract Splitter {
     // 5)  Alice can use the Web page to split her ether.
     
     //Owner represents the original deployer of the contract
-    address owner;
+    address public owner;
 
     //mapping declaration
     mapping (address => uint) public balances;
     
+    //SafeMath
+    using SafeMath for uint;
+    
     
     //event declarations
     event ContractDeployed(address _splitterAddress);
-    event FundsSplit(uint _totalSent, uint _splitAmount);
-    event FundsWithdrawn(uint _totalSent, address _address);
+    event FundsSplit(address _aliceAddress, address _bobAddress, address _carolAddress, uint _totalSent, uint _amountSent);
+    event FundsWithdrawn(uint _amountWithdrawn, address _reciever);
     
     //This constructor will set their addresses upon contract creation only
     constructor() public {
@@ -32,28 +36,32 @@ contract Splitter {
     //Below is the function to split ether from alice to carol and bob
     function splitEther(address _bobAddress, address _carolAddress) public payable {
 
-        //Removed requirement for only alice to send, now anyone can submit to have ether split
-        require(msg.value % 2 == 0, "This contract requires even amounts of ether to be split");
         
-        balances[_bobAddress] = SafeMath.add(balances[_bobAddress], msg.value/2);
-        balances[_carolAddress] = SafeMath.add(balances[_carolAddress], msg.value/2);
+        require(_bobAddress != address(0), "Error, the zero address was used");
+        require(_carolAddress != address(0), "Error, the zero address was used");
 
-        emit FundsSplit(msg.value, msg.value/2);
+        uint256 amountToSplit = 0;
+        
+        //If an odd amount is entered, the owner will get the extra wei and participants will recieve an even amount
+        if (msg.value % 2 != 0) {
+            amountToSplit = msg.value.sub(1);
+            balances[owner] = balances[owner].add(1);
+        } else {
+            amountToSplit = msg.value;
+        }
+
+        balances[_bobAddress] =  balances[_bobAddress].add(amountToSplit / 2);
+        balances[_carolAddress] = balances[_carolAddress].add(amountToSplit / 2);
+
+        emit FundsSplit(msg.sender, _bobAddress, _carolAddress, amountToSplit, amountToSplit/2);
     }
     
     function withdrawEther(uint amount) public {
-        
-        require(amount <= balances[msg.sender]);
-        balances[msg.sender] = SafeMath.sub(balances[msg.sender], amount);
+        uint balance = balances[msg.sender];
+        require(amount <= balance);
+        balances[msg.sender] = balances[msg.sender].sub(amount);
         msg.sender.transfer(amount);
         emit FundsWithdrawn(amount, msg.sender);
-        
-        
     }
     
-    //The owner (original deployer) is entitled to any extra funds recieved by the callback
-    
-    function () external payable {
-        balances[owner] = SafeMath.add(balances[owner], msg.value);
-    }
 }
