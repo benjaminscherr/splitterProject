@@ -23,7 +23,7 @@ contract Splitter {
     
     //event declarations
     event ContractDeployed(address _splitterAddress);
-    event FundsSplit(address _aliceAddress, address _bobAddress, address _carolAddress, uint _totalSent, uint _amountSent);
+    event FundsSplit(address _aliceAddress, address indexed _bobAddress, address indexed _carolAddress, uint _totalSent, uint _amountSent);
     event FundsWithdrawn(uint _amountWithdrawn, address _reciever);
     
     //This constructor will set their addresses upon contract creation only
@@ -40,27 +40,23 @@ contract Splitter {
         require(_bobAddress != address(0), "Error, the zero address was used");
         require(_carolAddress != address(0), "Error, the zero address was used");
 
-        uint256 amountToSplit = 0;
-        
-        //If an odd amount is entered, the owner will get the extra wei and participants will recieve an even amount
+        //If an odd amount is entered the owner gets the extra wei. This ensures when msg.value is divided by 2 nothing is lost
         if (msg.value % 2 != 0) {
-            amountToSplit = msg.value.sub(1);
             balances[owner] = balances[owner].add(1);
-        } else {
-            amountToSplit = msg.value;
-        }
+        } 
 
-        balances[_bobAddress] =  balances[_bobAddress].add(amountToSplit / 2);
-        balances[_carolAddress] = balances[_carolAddress].add(amountToSplit / 2);
+        balances[_bobAddress] =  balances[_bobAddress].add(msg.value / 2);
+        balances[_carolAddress] = balances[_carolAddress].add(msg.value / 2);
 
-        emit FundsSplit(msg.sender, _bobAddress, _carolAddress, amountToSplit, amountToSplit/2);
+        emit FundsSplit(msg.sender, _bobAddress, _carolAddress, msg.value, msg.value/2);
     }
     
     function withdrawEther(uint amount) public {
         uint balance = balances[msg.sender];
         require(amount <= balance);
-        balances[msg.sender] = balances[msg.sender].sub(amount);
-        msg.sender.transfer(amount);
+        balances[msg.sender] = balance.sub(amount);
+        (bool success,) = msg.sender.call.value(amount)("");
+        require(success, "Send Failed");
         emit FundsWithdrawn(amount, msg.sender);
     }
     

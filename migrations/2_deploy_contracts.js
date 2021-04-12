@@ -1,5 +1,4 @@
 const Splitter = artifacts.require("Splitter");
-const SafeMath = artifacts.require("SafeMath");
 
 module.exports = function(deployer, network, accounts) {
 
