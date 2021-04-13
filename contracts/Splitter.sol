@@ -23,7 +23,7 @@ contract Splitter {
     
     //event declarations
     event ContractDeployed(address _splitterAddress);
-    event FundsSplit(address _aliceAddress, address indexed _bobAddress, address indexed _carolAddress, uint _totalSent, uint _amountSent);
+    event FundsSplit(address indexed _aliceAddress, address indexed _bobAddress, address indexed _carolAddress, uint _totalSent, uint _amountSent);
     event FundsWithdrawn(uint _amountWithdrawn, address _reciever);
     
     //This constructor will set their addresses upon contract creation only
