@@ -5,23 +5,11 @@ require("file-loader?name=../index.html!../index.html");
 
 const splitterJson = require("../../build/contracts/Splitter.json");
 
-console.log("#####################hello#####################");
-//Supports Metamask, and other wallets that provide / inject 'web3'.
-// if (typeof web3 !== 'undefined') {
-//     // Use the Mist/wallet/Metamask provider.
-//     web3 = new Web3(web3.currentProvider);
-// } else {
-//     // Your preferred fallback.
-//     web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545')); 
-// }
+
 web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545')); 
-
-//web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-//window.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545')); 
-
 const Splitter = truffleContract(splitterJson);
 Splitter.setProvider(web3.currentProvider);
-//Splitter.setProvider(new Web3.providers.HttpProvider('http://localhost:8545'));
+
 
 
 window.addEventListener('load', function() {
